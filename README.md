@@ -106,6 +106,24 @@ mv setup/UserToolsConfig.txt config/
 conda deactivate
 ```
 
+## Database: use STRspy2.0-DB-fixed (important)
+
+The prebuilt `db-v2/STRspy2.0-DB.zip`, and databases built with `BuildDB_From_GeneBank.V1.sh`, contain FASTA files named `<locus>mod.fa` or `<locus>mod1.fa` that STRspy does not read, because it looks for `<locus>.fa`. With the unmodified zip, TPOX, FGA, D5S818, D7S820, D8S1179, D10S1248, D12S391 and D13S317 get no reads at all, and some alleles of DYS385ab, DYS390 and DYS458 are never considered. The run can still complete without an error, so the affected loci are simply missing from the results.
+
+This fork ships a corrected database that you can use directly:
+
+- `db-v2/STRspy2.0-DB-fixed/` (`.bed`, `.fa` and `.fai` files for each locus)
+
+To fix your own copy of the database instead (for example one built with BuildDB), unzip it, make the folder writable and run the merge script. samtools is needed to rebuild the `.fai` indexes.
+
+```bash
+unzip db-v2/STRspy2.0-DB.zip -d my_db
+chmod -R u+w my_db
+bash db-v2/optional-create-custom-db/fix_db_names.sh my_db/STRspy2.0-DB
+```
+
+The script merges each `<locus>mod*.fa` into `<locus>.fa` without duplicating records, so no alleles are lost, and it is safe to run more than once.
+
 ## Quickstart
 
 Modify the config files describing your data `config/InputConfig.txt`
