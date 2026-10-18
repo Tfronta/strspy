@@ -2,6 +2,7 @@
 INPUT_DIR=/test/Reads
 INPUT_BAM=no
 READ_TYPE=ont
+# Use the corrected database: <repo>/db-v2/STRspy2.0-DB-fixed (same folder for both lines below)
 STR_FASTA=/test/DB
 STR_BED=/test/DB
 GENOME_FASTA=/test/genome/Chr6.8.fa
