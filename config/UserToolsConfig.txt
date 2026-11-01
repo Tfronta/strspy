@@ -1,0 +1,9 @@
+# Default: the tools are taken from PATH, which is what the active strspy_env
+# provides. Run `bash setup/GenerateToolConfig.sh` from the repository root to
+# replace this file with the absolute paths of the environment you are using.
+SAMTOOLS=samtools
+BEDTOOLS=bedtools
+XATLAS=xatlas
+PARALLEL=parallel
+MINIMAP=minimap2
+SEQKIT=seqkit
