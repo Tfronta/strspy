@@ -87,10 +87,15 @@ seqkit >=v2.4.0
 ### Clone the repository
 
 ```
-git clone --branch STRspy2.0 --single-branch https://github.com/unique379r/strspy.git
+git clone https://github.com/Tfronta/strspy.git
 
 cd strspy
 ```
+
+This is the fork with the corrections described on this page, and its default
+branch is the one you want, so no `--branch` is needed. The upstream repository
+is at https://github.com/unique379r/strspy, where `STRspy2.0` is a branch and
+`main` still holds version 1.0.
 
 ### Create an environment
 
