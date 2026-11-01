@@ -137,6 +137,31 @@ if [[ ! -f "${tools_config}" ]]; then
 	exit 1;
 fi
 
+## The paths in the tools config have to be runnable. Nothing checked them
+## before, and a wrong or empty path does not stop a run: every call to the tool
+## fails on its own line, the run still ends with #Done. and exit status 0, and
+## the tables under Countings/ come out empty. This check sits before the logging
+## subshell below so that it can end the script, and not just the subshell.
+if [[ -f "${tools_config}" ]]; then
+	strspy_missing=""
+	strspy_check_tool () {
+		local value
+		value=$(grep -w "^$1" "${tools_config}" | cut -d '=' -f2)
+		if [[ -z "$value" ]] || ! command -v "$value" >/dev/null 2>&1; then
+			strspy_missing="$strspy_missing $1"
+		fi
+	}
+	strspy_check_tool BEDTOOLS
+	strspy_check_tool MINIMAP
+	strspy_check_tool SAMTOOLS
+	strspy_check_tool XATLAS
+	if [[ -n "$strspy_missing" ]]; then
+		echo -e "\n#These tools from ${tools_config} cannot be run:$strspy_missing\n"
+		echo -e "#Regenerate that file with the environment active:\n#    bash setup/GenerateToolConfig.sh\n"
+		exit 1;
+	fi
+fi
+
 ((
 if [[ ! -d "$input_reads_dir" ]]; then
     echo -e "\n#Input directory "$input_reads_dir" does not exist !!\n"

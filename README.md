@@ -105,7 +105,9 @@ bash setup/GenerateToolConfig.sh
 `GenerateToolConfig.sh` writes `config/UserToolsConfig.txt` with the paths of the
 tools in the active environment, replacing the copy that ships in this
 repository. It is already in `config/`, so there is nothing to move, and that is
-the file to pass to `-t`. Keep the environment active while you run STRspy: the
+the file to pass to `-t`. It stops, and writes nothing, if one of the six tools
+is not on `PATH`, so an incomplete environment is reported here rather than
+halfway through a run. Keep the environment active while you run STRspy: the
 scripts call `sed -i` in its GNU form, and on macOS only the sed from the
 environment accepts it.
 
@@ -131,9 +133,21 @@ The script merges each `<locus>mod*.fa` into `<locus>.fa` without duplicating re
 
 1. Edit `config/InputConfig.txt` so that it describes your data (every field is
    explained below).
-2. Generate `config/UserToolsConfig.txt` as shown above.
+2. With the environment active, run `bash setup/GenerateToolConfig.sh` from the
+   repository root, so that `config/UserToolsConfig.txt` holds the paths of the
+   tools you are actually using.
 3. Create the output directory named in `OUTPUT_DIR`: the run stops if it does
    not already exist.
+
+Step 2 matters more than it looks. In the original STRspy a path that does not
+exist stops nothing. Each call to the tool fails on its own line, the run still
+ends with `#Done.` and exit status 0, and the tables under `Results/Countings/`
+come out empty, so the affected loci look as though they had no reads. In this
+fork the core scripts read the paths before they start and stop with the list of
+tools they cannot run, and `GenerateToolConfig.sh` stops rather than write a path
+it could not find. The file shipped here reads the tools from `PATH`, so it works
+while the environment is active; step 2 replaces it with absolute paths, which is
+what a wrapper script or a job scheduler needs.
 
 ## Run STRspy
 
@@ -141,6 +155,8 @@ The wrapper reads the two configuration files, and takes them as options:
 
 ```
 cd strspy
+
+bash setup/GenerateToolConfig.sh
 
 bash ./STRspy_run_v2.0_Args.sh -i config/InputConfig.txt -t config/UserToolsConfig.txt -j normal
 ```
@@ -154,6 +170,7 @@ The core script does the same work with every path on the command line instead
 of in a configuration file:
 
 ```
+bash setup/GenerateToolConfig.sh
 mkdir -p Results
 
 bash src/STRspy_Normal_v2.0_Args.sh -s my_reads -r yes -t ont -f db-v2/STRspy2.0-DB-fixed -b db-v2/STRspy2.0-DB-fixed -l db-v2/STRspy_v2.DB.sort.bed -k 0.4 -o Results -c config/UserToolsConfig.txt -d 4
@@ -186,18 +203,20 @@ THREADS    : Number of memory should be used (default = 1)
 
 ## ToolsConfig.txt
 
+`GenerateToolConfig.sh` writes this file, so there is normally no reason to edit
+it by hand. Each value is read with `grep` and `cut -d '='`, so it has to follow
+the `=` with no space or tab around it: earlier versions of this page showed the
+names padded with tabs, which leaves the tab inside the path and the tool is then
+not found. `SEQKIT` is written for completeness and is not read by the core
+scripts.
+
 ```
-
-BEDTOOLS 	=	../user/path/bedtools
-
-MINIMAP 	=	../user/path/minimap2
-
-SAMTOOLS 	=	../user/path/samtools
-
-XATLAS 		=	../user/path/xatlas
-
-PARALLEL 	=	../user/path/parallel
-
+BEDTOOLS=/user/path/bedtools
+MINIMAP=/user/path/minimap2
+SAMTOOLS=/user/path/samtools
+XATLAS=/user/path/xatlas
+PARALLEL=/user/path/parallel
+SEQKIT=/user/path/seqkit
 ```
 
 ## Getting help
