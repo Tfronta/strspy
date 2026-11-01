@@ -9,4 +9,4 @@ GENOME_FASTA=/test/genome/Chr6.8.fa
 REGION_BED=/test/Loci.bed
 NORM_CUTOFF=0.4
 OUTPUT_DIR=/test/Results
-THREAD=1
+THREADS=1

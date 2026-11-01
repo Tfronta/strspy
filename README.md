@@ -100,11 +100,14 @@ bash setup/STRspy_2.0.setup.sh
 conda activate strspy_env
 
 bash setup/GenerateToolConfig.sh
-
-mv setup/UserToolsConfig.txt config/
-
-conda deactivate
 ```
+
+`GenerateToolConfig.sh` writes `config/UserToolsConfig.txt` with the paths of the
+tools in the active environment, replacing the copy that ships in this
+repository. It is already in `config/`, so there is nothing to move, and that is
+the file to pass to `-t`. Keep the environment active while you run STRspy: the
+scripts call `sed -i` in its GNU form, and on macOS only the sed from the
+environment accepts it.
 
 ## Database: use STRspy2.0-DB-fixed (important)
 
@@ -126,18 +129,38 @@ The script merges each `<locus>mod*.fa` into `<locus>.fa` without duplicating re
 
 ## Quickstart
 
-Modify the config files describing your data `config/InputConfig.txt`
+1. Edit `config/InputConfig.txt` so that it describes your data (every field is
+   explained below).
+2. Generate `config/UserToolsConfig.txt` as shown above.
+3. Create the output directory named in `OUTPUT_DIR`: the run stops if it does
+   not already exist.
 
 ## Run STRspy
+
+The wrapper reads the two configuration files, and takes them as options:
 
 ```
 cd strspy
 
-bash ./STRspy_run_v2.0_Args.sh -h
+bash ./STRspy_run_v2.0_Args.sh -i config/InputConfig.txt -t config/UserToolsConfig.txt -j normal
+```
 
-USAGE: bash ./STRspy_run_v2.0_Args.sh config/InputConfig.txt config/ToolsConfig.txt
+`-i`, `-t` and `-j` are the only arguments the wrapper reads. Given the two file
+names on their own, as earlier versions of this page showed, it reads neither
+file and the run stops at `#Output directory  does not exist !!` with every
+input parameter printed empty.
+
+The core script does the same work with every path on the command line instead
+of in a configuration file:
 
 ```
+mkdir -p Results
+
+bash src/STRspy_Normal_v2.0_Args.sh -s my_reads -r yes -t ont -f db-v2/STRspy2.0-DB-fixed -b db-v2/STRspy2.0-DB-fixed -l db-v2/STRspy_v2.DB.sort.bed -k 0.4 -o Results -c config/UserToolsConfig.txt -d 4
+```
+
+`-s` is a directory holding the reads, not a single file: `.bam` files with
+`-r yes`, or `.fastq.gz` files with `-r no`. `-o` must exist before the run.
 
 ## InputConfig.txt
 
