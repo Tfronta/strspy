@@ -51,44 +51,12 @@ Forensic human identification relies on length-based differences in short tandem
 
 ## Installation
 
-1.1 Install Miniconda
-
-Download Miniconda installer from here: https://docs.conda.io/en/latest/miniconda.html and Install it to your laptop or server.
-
-### Conda under linux environment
-
-```
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-
-bash Miniconda3-latest-Linux-x86_64.sh
-
-```
-
-Follow the instructions directed by the miniconda script
-
-1.2 Install STRspy 
-
-STRspy v2.0 requires the installation of the following third-party software..
-
-```
-gnu parallel >=20210222
-
-samtools >=v1.12
-
-bedtools >=v2.30.0
-
-minimap2 >=v2.18-r1015
-
-xatlas >=v0.3
-
-seqkit >=v2.4.0
-```
+STRspy v2.0 requires Conda (for example [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or Miniforge) and the tools declared in `setup/STRspy_2.0_env.yml` (`gnu parallel >=20210222`, `samtools >=v1.12`, `bedtools >=v2.30.0`, `minimap2 >=v2.18-r1015`, `xatlas >=v0.3`, `seqkit >=v2.4.0`).
 
 ### Clone the repository
 
-```
+```bash
 git clone https://github.com/Tfronta/strspy.git
-
 cd strspy
 ```
 
@@ -99,22 +67,12 @@ is at https://github.com/unique379r/strspy, where `STRspy2.0` is a branch and
 
 ### Create an environment
 
-```
-bash setup/STRspy_2.0.setup.sh
-
+```bash
+conda env create -f setup/STRspy_2.0_env.yml
 conda activate strspy_env
-
-bash setup/GenerateToolConfig.sh
 ```
 
-`GenerateToolConfig.sh` writes `config/UserToolsConfig.txt` with the paths of the
-tools in the active environment, replacing the copy that ships in this
-repository. It is already in `config/`, so there is nothing to move, and that is
-the file to pass to `-t`. It stops, and writes nothing, if one of the six tools
-is not on `PATH`, so an incomplete environment is reported here rather than
-halfway through a run. Keep the environment active while you run STRspy: the
-scripts call `sed -i` in its GNU form, and on macOS only the sed from the
-environment accepts it.
+`config/UserToolsConfig.txt` already reads the six tools from `PATH` while `strspy_env` is active. If you install dependencies outside that environment and need absolute paths written into `config/UserToolsConfig.txt`, run `bash setup/GenerateToolConfig.sh` from the repository root with your environment active. Keep the environment active while you run STRspy: the scripts call `sed -i` in its GNU form, and on macOS only the `sed` from the environment accepts it.
 
 ## Database: use STRspy2.0-DB-fixed (important)
 
@@ -156,33 +114,13 @@ what a wrapper script or a job scheduler needs.
 
 ## Run STRspy
 
-The wrapper reads the two configuration files, and takes them as options:
+Run the core script directly from the repository root on an aligned BAM file:
 
-```
-cd strspy
-
-bash setup/GenerateToolConfig.sh
-
-bash ./STRspy_run_v2.0_Args.sh -i config/InputConfig.txt -t config/UserToolsConfig.txt -j normal
+```bash
+bash src/STRspy_Normal_v2.0_Args.sh -i sample.bam -r yes -t ont -f db-v2/STRspy2.0-DB-fixed -b db-v2/STRspy2.0-DB-fixed -l db-v2/STRspy_v2.DB.sort.bed -k 0.4 -o Results -c config/UserToolsConfig.txt -d 4
 ```
 
-`-i`, `-t` and `-j` are the only arguments the wrapper reads. Given the two file
-names on their own, as earlier versions of this page showed, it reads neither
-file and the run stops at `#Output directory  does not exist !!` with every
-input parameter printed empty.
-
-The core script does the same work with every path on the command line instead
-of in a configuration file:
-
-```
-bash setup/GenerateToolConfig.sh
-mkdir -p Results
-
-bash src/STRspy_Normal_v2.0_Args.sh -s my_reads -r yes -t ont -f db-v2/STRspy2.0-DB-fixed -b db-v2/STRspy2.0-DB-fixed -l db-v2/STRspy_v2.DB.sort.bed -k 0.4 -o Results -c config/UserToolsConfig.txt -d 4
-```
-
-`-s` is a directory holding the reads, not a single file: `.bam` files with
-`-r yes`, or `.fastq.gz` files with `-r no`. `-o` must exist before the run.
+Alternatively, you can pass a directory of `.bam` (`-r yes`) or `.fastq.gz` (`-r no`) files via `-i`, or use the config-based wrapper (`bash ./STRspy_run_v2.0_Args.sh -i config/InputConfig.txt -t config/UserToolsConfig.txt -j normal` after editing `config/InputConfig.txt`).
 
 ## InputConfig.txt
 
@@ -367,5 +305,3 @@ bioinforupesh200 DOT au AT gmail DOT com
 
 rupesh.k.kesharwani DOT uth DOT tmc DOT  edu
 ```
-
-
