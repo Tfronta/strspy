@@ -474,7 +474,7 @@ if [[ $read_type == "$type" ]]; then
 			## get top two by getting top two
 			#sed '1d' $output_dir/Countings/"$bed_fname"_"$bam_name"_Allele_freqs.txt | head -n 2 | tr '_' ' ' | sed 's/\]/] /g' | awk '{print $1"\t"$(NF-2)"\t"$NF}' > $output_dir/Countings/"$bed_fname"_"$bam_name"_Toptwo.txt
 			echo -e "#get top two Alleles by filtering norm value <=" $filter_threshold
-			sed '1d' $output_dir/Countings/"$bed_fname"_"$bam_name"_Allele_freqs.txt | awk  -v f="$filter_threshold" '$3>=f' | tr '_' ' ' | sed 's/\]/] /g' | awk '{print $1"\t"$(NF-2)"\t"$NF}' | sort -r -k3,3 | head -n 2 > $output_dir/Countings/"$bed_fname"_"$bam_name"_Toptwo.txt
+			sed '1d' $output_dir/Countings/"$bed_fname"_"$bam_name"_Allele_freqs.txt | awk  -v f="$filter_threshold" '$3>=f' | tr '_' ' ' | sed 's/\]/] /g' | awk -v locus="$bed_fname" '{print locus"\t"$(NF-2)"\t"$NF}' | sort -r -k3,3 | head -n 2 > $output_dir/Countings/"$bed_fname"_"$bam_name"_Toptwo.txt
 			## header
 			sed -i '1iLocus\tAllele\tNormalizedCounts' $output_dir/Countings/"$bed_fname"_"$bam_name"_Toptwo.txt
 			progress-bar 5
@@ -486,7 +486,7 @@ if [[ $read_type == "$type" ]]; then
 				bed_fname=$(basename "${bedfile##*/}" .bed)
 				freq_file="$output_dir/Countings/${bed_fname}_${bam_name}_Allele_freqs.txt"
 				if [[ -s "$freq_file" ]]; then
-					sed '1d' "$freq_file" | awk -v f="$filter_threshold" '$3>=f' | tr '_' ' ' | sed 's/\]/] /g' | awk '{print $1"\t"$(NF-2)"\t"$(NF-1)"\t"$NF}' | sort -r -k4,4 | head -n 2
+					sed '1d' "$freq_file" | awk -v f="$filter_threshold" '$3>=f' | tr '_' ' ' | sed 's/\]/] /g' | awk -v locus="$bed_fname" '{print locus"\t"$(NF-2)"\t"$(NF-1)"\t"$NF}' | sort -r -k4,4 | head -n 2
 				fi
 			done
 		} > "$output_dir/${bam_name}_All_Loci_Summary.tsv"
