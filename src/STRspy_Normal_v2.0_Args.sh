@@ -64,7 +64,7 @@ usage="[-h] [-s -r -t -f -b -g -l -k -o -c -d] -- This script is core-method of 
 
 where:
 	-h show the help
-	-s input read dir (either bam or fastq)
+	-i/-s input read file or dir (either bam or fastq)
 	-r is input bam? (yes/no)
 	-t technology type (ont/pb) 
 	-f dir of database fasta
@@ -91,10 +91,10 @@ if [ $# -eq 0 ]; then
     exit 1;
 fi
 
-while getopts 's:r:t:f:b:g:l:k:o:c:d:' option
+while getopts 'i:s:r:t:f:b:g:l:k:o:c:d:' option
 do
     case "${option}" in
-        s) input_reads_dir=${OPTARG};;
+        i|s) input_reads_dir=${OPTARG};;
         r) is_input_bam=${OPTARG};;
         t) readtype=${OPTARG};;
         f) motif_fasta_dir=${OPTARG};;
@@ -116,6 +116,9 @@ then
   	filter_threshold=0.4
 fi
 
+if [[ -n "$output_dir" ]]; then
+	mkdir -p "$output_dir"
+fi
 if [[ ! -d "$output_dir" ]]; then
 	echo -e "\n#Output directory "$output_dir" does not exist !!\n"
 	echo "Usage: bash `basename $0` $usage"
@@ -160,6 +163,17 @@ if [[ -f "${tools_config}" ]]; then
 		echo -e "#Regenerate that file with the environment active:\n#    bash setup/GenerateToolConfig.sh\n"
 		exit 1;
 	fi
+fi
+
+if [[ -f "$input_reads_dir" ]]; then
+	_single_input_file="$(cd "$(dirname "$input_reads_dir")" && pwd)/$(basename "$input_reads_dir")"
+	_strspy_tmp_in="$(mktemp -d "${TMPDIR:-/tmp}/strspy_input.XXXXXX")"
+	trap 'rm -rf "$_strspy_tmp_in"' EXIT
+	ln -s "$_single_input_file" "$_strspy_tmp_in/$(basename "$_single_input_file")"
+	if [[ -f "${_single_input_file}.bai" ]]; then
+		ln -s "${_single_input_file}.bai" "$_strspy_tmp_in/$(basename "$_single_input_file").bai"
+	fi
+	input_reads_dir="$_strspy_tmp_in"
 fi
 
 ((
@@ -266,7 +280,7 @@ if [[ "$is_input_bam" == "yes" ]] && [[ -f "$genome_fa" ]]; then
 fi
 
 # Default value for threads
-threads=1
+threads="${threads:-1}"
 # Checking if the 'threads' variable is set and is a positive integer
 if ! [[ $threads =~ ^[0-9]+$ ]] || [[ "$threads" -le 0 ]]; then
     echo -e "Invalid or no value provided for threads, setting to default (1).."
@@ -303,7 +317,6 @@ progress-bar() {
     clean_line() { printf "\r"; }
   for (( elapsed=1; elapsed<=$duration; elapsed++ )); do
       already_done; remaining; percentage
-      sleep 1
       clean_line
   done
   clean_line
@@ -448,7 +461,7 @@ if [[ $read_type == "$type" ]]; then
 			-p $output_dir/SNVcalls/"$bed_fname"_"$bam_name"
 			echo -e "#Done.\n"
 			echo -e "#Counting Alleles..."
-			#$samtools view -q 1 -F 4 $output_dir/IntersectMappedReads/"$bed_fname"_"$bam_name"_alignment.sorted.bam | cut -f 3 | sort | uniq -c | sed -e 's/^ *//;s/ /\t/' | \
+			#$samtools view -q 1 -F 4 $output_dir/IntersectMappedReads/"$bed_fname"_"$bed_name"_alignment.sorted.bam | cut -f 3 | sort | uniq -c | sed -e 's/^ *//;s/ /\t/' | \
 			#grep -v '*' | sort -nr -k1,1 > $output_dir/Countings/"$bed_fname"_"$bam_name"_Allele_freqs.txt
 			## remove secondary and supplementary alignments
 			$samtools view -@ $threads -q 1 -F 2308 $output_dir/IntersectMappedReads/"$bed_fname"_"$bam_name"_alignment.sorted.bam | cut -f 3 | sort | uniq -c | sed -e 's/^ *//;s/ /\t/' | \
@@ -467,6 +480,16 @@ if [[ $read_type == "$type" ]]; then
 			progress-bar 5
 			echo -e "#Done.\n"
 		done
+		{
+			printf "Locus\tAllele\tRawCounts\tNormalizedCounts\n"
+			for bedfile in "${strbed[@]}"; do
+				bed_fname=$(basename "${bedfile##*/}" .bed)
+				freq_file="$output_dir/Countings/${bed_fname}_${bam_name}_Allele_freqs.txt"
+				if [[ -s "$freq_file" ]]; then
+					sed '1d' "$freq_file" | awk -v f="$filter_threshold" '$3>=f' | tr '_' ' ' | sed 's/\]/] /g' | awk '{print $1"\t"$(NF-2)"\t"$(NF-1)"\t"$NF}' | sort -r -k4,4 | head -n 2
+				fi
+			done
+		} > "$output_dir/${bam_name}_All_Loci_Summary.tsv"
 	done
 fi
 
@@ -475,4 +498,3 @@ echo "$(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
 echo -e "\n#The log file also has created in your working directory\n"
 
 ) 2>&1) | tee -a $output_dir/STRspyLogNoParallel.log
-
